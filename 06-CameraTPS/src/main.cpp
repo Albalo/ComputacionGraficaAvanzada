@@ -53,8 +53,9 @@ Shader shaderSkybox;
 Shader shaderMulLighting;
 //Shader para el terreno
 Shader shaderTerrain;
-
+			
 std::shared_ptr<Camera> camera(new ThirdPersonCamera());
+std::shared_ptr<FirstPersonCamera> cameraFPS(new FirstPersonCamera());
 float distanceFromTarget = 5.0;
 
 Sphere skyboxSphere(20, 20);
@@ -89,7 +90,12 @@ Model modelLampPost2;
 // Mayow
 Model mayowModelAnimate;
 // Terrain model instance
+//A2
+Model modelA2Animate;
 Terrain terrain(-1, -1, 200, 8, "../Textures/heightmap.png");
+
+//Selector de camara
+bool cambioCamara = 0;
 
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
 GLuint textureTerrainBackgroundID, textureTerrainRID, textureTerrainGID, textureTerrainBID, textureTerrainBlendMapID;
@@ -121,10 +127,12 @@ glm::mat4 modelMatrixLambo = glm::mat4(1.0);
 glm::mat4 modelMatrixAircraft = glm::mat4(1.0);
 glm::mat4 modelMatrixDart = glm::mat4(1.0f);
 glm::mat4 modelMatrixMayow = glm::mat4(1.0f);
+glm::mat4 modelMatrixA2Body = glm::mat4(1.0f);
 
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 int modelSelected = 2;
 bool enableCountSelected = true;
+int banderaA2Anim = 0;
 
 // Variables to animations keyframes
 bool saveFrame = false, availableSave = true, modelChange1 = false, modelChange2 = false, modelChange3 = false, modelChange4 = false;
@@ -303,9 +311,16 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	mayowModelAnimate.loadModel("../models/mayow/personaje2.fbx");
 	mayowModelAnimate.setShader(&shaderMulLighting);
 
+	//A2
+	modelA2Animate.loadModel("../models/A2/A2Anim.fbx");
+	modelA2Animate.setShader(&shaderMulLighting);
+
+	//Camara
 	camera->setPosition(glm::vec3(0.0, 0.0, 10.0));
 	camera->setDistanceFromTarget(distanceFromTarget);
 	camera->setSensitivity(1.0f);
+	glm::vec3 pos_Camara = glm::vec3(0.0, 5.0, 10.0);
+	cameraFPS->setPosition(pos_Camara);
 
 	// Definimos el tamanio de la imagen
 	int imageWidth, imageHeight;
@@ -699,6 +714,8 @@ void destroy() {
 	modelLamp1.destroy();
 	modelLamp2.destroy();
 	modelLampPost2.destroy();
+	modelA2Animate.destroy();
+
 
 	// Custom objects animate
 	mayowModelAnimate.destroy();
@@ -772,10 +789,27 @@ bool processInput(bool continueApplication) {
 		return false;
 	}
 
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		camera->mouseMoveCamera(offsetX, 0.0, deltaTime);
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-		camera->mouseMoveCamera(0.0, offsetY, deltaTime);
+	//selección de cámara 1a o 3a persona
+	if (cambioCamara == 1) {
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			cameraFPS->moveFrontCamera(true, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			cameraFPS->moveFrontCamera(false, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			cameraFPS->moveRightCamera(false, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			cameraFPS->moveRightCamera(true, deltaTime);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+			cameraFPS->mouseMoveCamera(offsetX, offsetY, deltaTime);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+			cameraFPS->mouseMoveCamera(offsetX, offsetY, deltaTime);
+	}
+	else {
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+			camera->mouseMoveCamera(offsetX, 0.0, deltaTime);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+			camera->mouseMoveCamera(0.0, offsetY, deltaTime);
+	}
 	offsetX = 0;
 	offsetY = 0;
 
@@ -783,7 +817,7 @@ bool processInput(bool continueApplication) {
 	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS){
 		enableCountSelected = false;
 		modelSelected++;
-		if(modelSelected > 2)
+		if(modelSelected > 3)
 			modelSelected = 0;
 		if(modelSelected == 1)
 			fileName = "../animaciones/animation_dart_joints.txt";
@@ -913,6 +947,37 @@ bool processInput(bool continueApplication) {
 		modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(0, 0, -0.02));
 	}
 
+	//A2 Movement
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_RELEASE && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_RELEASE
+		&& glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE)
+		banderaA2Anim = 0;
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+		modelMatrixA2Body = glm::rotate(modelMatrixA2Body, 0.02f, glm::vec3(0, 1, 0));
+		banderaA2Anim = 2;
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		modelMatrixA2Body = glm::rotate(modelMatrixA2Body, 0.02f, glm::vec3(0, -1, 0));
+		banderaA2Anim = 2;
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		modelMatrixA2Body = glm::translate(modelMatrixA2Body, glm::vec3(0.0, 0.0, -0.02));
+		modelMatrixA2Body = glm::translate(modelMatrixA2Body, glm::vec3(0.0, 0.0, -0.02));
+		banderaA2Anim = 2;
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		modelMatrixA2Body = glm::translate(modelMatrixA2Body, glm::vec3(0.0, 0.0, 0.02));
+		modelMatrixA2Body = glm::translate(modelMatrixA2Body, glm::vec3(0.0, 0.0, 0.02));
+		banderaA2Anim = 2;
+	}
+
+	//Cambio cámara a FPS y viceversa
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
+		if (cambioCamara == 1)
+			cambioCamara = 0;
+		else if (cambioCamara == 0)
+			cambioCamara = 1;
+	}
+
 	glfwPollEvents();
 	return continueApplication;
 }
@@ -968,12 +1033,18 @@ void applicationLoop() {
 			angleTarget = glm::angle(glm::quat_cast(modelMatrixDart));
 			target = modelMatrixDart[3];
 		}
-		else if (modelSelected = 2) {
+		else if (modelSelected == 2) {
 			axis = glm::axis(glm::quat_cast(modelMatrixMayow));
 			angleTarget = glm::angle(glm::quat_cast(modelMatrixMayow));
 			target = modelMatrixMayow[3];
 		}
+		else if (modelSelected == 3) {
+			axis = glm::axis(glm::quat_cast(modelMatrixA2Body));
+			angleTarget = glm::angle(glm::quat_cast(modelMatrixA2Body));
+			target = modelMatrixA2Body[3];
+		}
 
+		glm::mat4 view;
 		if (std::isnan(angleTarget))
 			angleTarget = 0.0;
 		if (axis.y < 0)
@@ -983,7 +1054,12 @@ void applicationLoop() {
 		camera->setCameraTarget(target);
 		camera->setAngleTarget(angleTarget);
 		camera->updateCamera();
-		glm::mat4 view = camera->getViewMatrix();
+		if (cambioCamara == 1) {
+			view = cameraFPS->getViewMatrix();
+		}
+		else {
+			view = camera->getViewMatrix();
+		}
 
 		// Settea la matriz de vista y projection al shader con solo color
 		shader.setMatrix4("projection", 1, false, glm::value_ptr(projection));
@@ -1248,6 +1324,19 @@ void applicationLoop() {
 		mayowModelAnimate.render(modelMatrixMayowBody);
 
 		/*******************************************
+		 * A2
+		 *******************************************/
+		modelMatrixA2Body[3][1] = terrain.getHeightTerrain(modelMatrixA2Body[3][0], modelMatrixA2Body[3][2]);
+		glm::vec3 aux = glm::vec3(terrain.getNormalTerrain(modelMatrixA2Body[3][0], modelMatrixA2Body[3][2]));
+		modelMatrixA2Body[1][0] = aux[0];
+		modelMatrixA2Body[1][1] = aux[1];
+		modelMatrixA2Body[1][2] = aux[2];
+		glm::mat4 modelMatrixA2WalkBody = glm::mat4(modelMatrixA2Body);
+		modelMatrixA2WalkBody = glm::scale(modelMatrixA2WalkBody, glm::vec3(0.003, 0.003, 0.003));
+		modelA2Animate.setAnimationIndex(banderaA2Anim);
+		modelA2Animate.render(modelMatrixA2WalkBody);
+
+		/*******************************************
 		 * Skybox
 		 *******************************************/
 		GLint oldCullFaceMode;
@@ -1348,7 +1437,7 @@ void applicationLoop() {
 }
 
 int main(int argc, char **argv) {
-	init(800, 700, "Window GLFW", false);
+	init(800, 700, "Práctica 06", false);
 	applicationLoop();
 	destroy();
 	return 1;
