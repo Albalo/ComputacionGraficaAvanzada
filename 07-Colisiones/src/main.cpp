@@ -56,6 +56,8 @@ Shader shaderSkybox;
 Shader shaderMulLighting;
 //Shader para el terreno
 Shader shaderTerrain;
+//Shader para el buffer de profundidad
+Shader shaderDepthTesting;
 
 std::shared_ptr<Camera> camera(new ThirdPersonCamera());
 float distanceFromTarget = 7.0;
@@ -94,6 +96,8 @@ Model modelLampPost2;
 // Mayow
 Model mayowModelAnimate;
 // Terrain model instance
+//A2
+Model modelA2Animate;
 Terrain terrain(-1, -1, 200, 8, "../Textures/heightmap.png");
 
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
@@ -126,11 +130,13 @@ glm::mat4 modelMatrixLambo = glm::mat4(1.0);
 glm::mat4 modelMatrixAircraft = glm::mat4(1.0);
 glm::mat4 modelMatrixDart = glm::mat4(1.0f);
 glm::mat4 modelMatrixMayow = glm::mat4(1.0f);
+glm::mat4 modelMatrixA2Body = glm::mat4(1.0f);
 
 int animationIndex = 1;
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 int modelSelected = 2;
 bool enableCountSelected = true;
+int banderaA2Anim = 0;
 
 // Variables to animations keyframes
 bool saveFrame = false, availableSave = true;
@@ -244,6 +250,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	shaderSkybox.initialize("../Shaders/skyBox.vs", "../Shaders/skyBox.fs");
 	shaderMulLighting.initialize("../Shaders/iluminacion_textura_animation.vs", "../Shaders/multipleLights.fs");
 	shaderTerrain.initialize("../Shaders/terrain.vs", "../Shaders/terrain.fs");
+	shaderDepthTesting.initialize("../Shaders/depthTesting.vs", "../Shaders/depthTesting.fs");
 
 	// Inicializacion de los objetos.
 	skyboxSphere.init();
@@ -251,75 +258,79 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	skyboxSphere.setScale(glm::vec3(20.0f, 20.0f, 20.0f));
 
 	boxCollider.init();
-	boxCollider.setShader(&shader);
+	boxCollider.setShader(&shaderDepthTesting);
 	boxCollider.setColor(glm::vec4(1.0, 1.0, 1.0, 1.0));
 
 	sphereCollider.init();
-	sphereCollider.setShader(&shader);
+	sphereCollider.setShader(&shaderDepthTesting);
 	sphereCollider.setColor(glm::vec4(1.0, 1.0, 1.0, 1.0));
 
 	modelRock.loadModel("../models/rock/rock.obj");
-	modelRock.setShader(&shaderMulLighting);
+	modelRock.setShader(&shaderDepthTesting);
 
 	modelAircraft.loadModel("../models/Aircraft_obj/E 45 Aircraft_obj.obj");
-	modelAircraft.setShader(&shaderMulLighting);
+	modelAircraft.setShader(&shaderDepthTesting);
 
 	terrain.init();
-	terrain.setShader(&shaderTerrain);
+	terrain.setShader(&shaderDepthTesting);
 	terrain.setPosition(glm::vec3(100, 0, 100));
 
 	// Helicopter
 	modelHeliChasis.loadModel("../models/Helicopter/Mi_24_chasis.obj");
-	modelHeliChasis.setShader(&shaderMulLighting);
+	modelHeliChasis.setShader(&shaderDepthTesting);
 	modelHeliHeli.loadModel("../models/Helicopter/Mi_24_heli.obj");
-	modelHeliHeli.setShader(&shaderMulLighting);
+	modelHeliHeli.setShader(&shaderDepthTesting);
 	// Lamborginhi
 	modelLambo.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_chasis.obj");
-	modelLambo.setShader(&shaderMulLighting);
+	modelLambo.setShader(&shaderDepthTesting);
 	modelLamboLeftDor.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_left_dor.obj");
-	modelLamboLeftDor.setShader(&shaderMulLighting);
+	modelLamboLeftDor.setShader(&shaderDepthTesting);
 	modelLamboRightDor.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_right_dor.obj");
-	modelLamboRightDor.setShader(&shaderMulLighting);
+	modelLamboRightDor.setShader(&shaderDepthTesting);
 	modelLamboFrontLeftWheel.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_front_left_wheel.obj");
-	modelLamboFrontLeftWheel.setShader(&shaderMulLighting);
+	modelLamboFrontLeftWheel.setShader(&shaderDepthTesting);
 	modelLamboFrontRightWheel.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_front_right_wheel.obj");
-	modelLamboFrontRightWheel.setShader(&shaderMulLighting);
+	modelLamboFrontRightWheel.setShader(&shaderDepthTesting);
 	modelLamboRearLeftWheel.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_rear_left_wheel.obj");
-	modelLamboRearLeftWheel.setShader(&shaderMulLighting);
+	modelLamboRearLeftWheel.setShader(&shaderDepthTesting);
 	modelLamboRearRightWheel.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_rear_right_wheel.obj");
-	modelLamboRearRightWheel.setShader(&shaderMulLighting);
+	modelLamboRearRightWheel.setShader(&shaderDepthTesting);
 
 	// Dart Lego
 	modelDartLegoBody.loadModel("../models/LegoDart/LeoDart_body.obj");
-	modelDartLegoBody.setShader(&shaderMulLighting);
+	modelDartLegoBody.setShader(&shaderDepthTesting);
 	modelDartLegoMask.loadModel("../models/LegoDart/LeoDart_mask.obj");
-	modelDartLegoMask.setShader(&shaderMulLighting);
+	modelDartLegoMask.setShader(&shaderDepthTesting);
 	modelDartLegoHead.loadModel("../models/LegoDart/LeoDart_head.obj");
-	modelDartLegoHead.setShader(&shaderMulLighting);
+	modelDartLegoHead.setShader(&shaderDepthTesting);
 	modelDartLegoLeftArm.loadModel("../models/LegoDart/LeoDart_left_arm.obj");
-	modelDartLegoLeftArm.setShader(&shaderMulLighting);
+	modelDartLegoLeftArm.setShader(&shaderDepthTesting);
 	modelDartLegoRightArm.loadModel("../models/LegoDart/LeoDart_right_arm.obj");
-	modelDartLegoRightArm.setShader(&shaderMulLighting);
+	modelDartLegoRightArm.setShader(&shaderDepthTesting);
 	modelDartLegoLeftHand.loadModel("../models/LegoDart/LeoDart_left_hand.obj");
-	modelDartLegoLeftHand.setShader(&shaderMulLighting);
+	modelDartLegoLeftHand.setShader(&shaderDepthTesting);
 	modelDartLegoRightHand.loadModel("../models/LegoDart/LeoDart_right_hand.obj");
-	modelDartLegoRightHand.setShader(&shaderMulLighting);
+	modelDartLegoRightHand.setShader(&shaderDepthTesting);
 	modelDartLegoLeftLeg.loadModel("../models/LegoDart/LeoDart_left_leg.obj");
-	modelDartLegoLeftLeg.setShader(&shaderMulLighting);
+	modelDartLegoLeftLeg.setShader(&shaderDepthTesting);
 	modelDartLegoRightLeg.loadModel("../models/LegoDart/LeoDart_right_leg.obj");
-	modelDartLegoRightLeg.setShader(&shaderMulLighting);
+	modelDartLegoRightLeg.setShader(&shaderDepthTesting);
 
 	//Lamp models
 	modelLamp1.loadModel("../models/Street-Lamp-Black/objLamp.obj");
-	modelLamp1.setShader(&shaderMulLighting);
+	modelLamp1.setShader(&shaderDepthTesting);
 	modelLamp2.loadModel("../models/Street_Light/Lamp.obj");
-	modelLamp2.setShader(&shaderMulLighting);
+	modelLamp2.setShader(&shaderDepthTesting);
 	modelLampPost2.loadModel("../models/Street_Light/LampPost.obj");
-	modelLampPost2.setShader(&shaderMulLighting);
+	modelLampPost2.setShader(&shaderDepthTesting);
 
 	//Mayow
 	mayowModelAnimate.loadModel("../models/mayow/personaje2.fbx");
-	mayowModelAnimate.setShader(&shaderMulLighting);
+	mayowModelAnimate.setShader(&shaderDepthTesting);
+
+	//A2
+	modelA2Animate.loadModel("../models/A2/A2Anim.fbx");
+	modelA2Animate.setShader(&shaderDepthTesting);
 
 	camera->setPosition(glm::vec3(0.0, 0.0, 10.0));
 	camera->setDistanceFromTarget(distanceFromTarget);
@@ -719,6 +730,7 @@ void destroy() {
 	modelLamp1.destroy();
 	modelLamp2.destroy();
 	modelLampPost2.destroy();
+	modelA2Animate.destroy();
 
 	// Custom objects animate
 	mayowModelAnimate.destroy();
@@ -803,7 +815,7 @@ bool processInput(bool continueApplication) {
 	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS){
 		enableCountSelected = false;
 		modelSelected++;
-		if(modelSelected > 2)
+		if(modelSelected > 3)
 			modelSelected = 0;
 		if(modelSelected == 1)
 			fileName = "../animaciones/animation_dart_joints.txt";
@@ -903,6 +915,29 @@ bool processInput(bool continueApplication) {
 		animationIndex = 0;
 	}
 
+	//A2 Movement
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_RELEASE && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_RELEASE
+		&& glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE)
+		banderaA2Anim = 0;
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+		modelMatrixA2Body = glm::rotate(modelMatrixA2Body, 0.02f, glm::vec3(0, 1, 0));
+		banderaA2Anim = 2;
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		modelMatrixA2Body = glm::rotate(modelMatrixA2Body, 0.02f, glm::vec3(0, -1, 0));
+		banderaA2Anim = 2;
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		modelMatrixA2Body = glm::translate(modelMatrixA2Body, glm::vec3(0.0, 0.0, -0.02));
+		modelMatrixA2Body = glm::translate(modelMatrixA2Body, glm::vec3(0.0, 0.0, -0.02));
+		banderaA2Anim = 2;
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		modelMatrixA2Body = glm::translate(modelMatrixA2Body, glm::vec3(0.0, 0.0, 0.02));
+		modelMatrixA2Body = glm::translate(modelMatrixA2Body, glm::vec3(0.0, 0.0, 0.02));
+		banderaA2Anim = 2;
+	}
+
 	glfwPollEvents();
 	return continueApplication;
 }
@@ -962,10 +997,15 @@ void applicationLoop() {
 			angleTarget = glm::angle(glm::quat_cast(modelMatrixDart));
 			target = modelMatrixDart[3];
 		}
-		else{
+		else if (modelSelected == 2) {
 			axis = glm::axis(glm::quat_cast(modelMatrixMayow));
 			angleTarget = glm::angle(glm::quat_cast(modelMatrixMayow));
 			target = modelMatrixMayow[3];
+		}
+		else if (modelSelected == 3) {
+			axis = glm::axis(glm::quat_cast(modelMatrixA2Body));
+			angleTarget = glm::angle(glm::quat_cast(modelMatrixA2Body));
+			target = modelMatrixA2Body[3];
 		}
 
 		if(std::isnan(angleTarget))
@@ -998,6 +1038,11 @@ void applicationLoop() {
 					glm::value_ptr(projection));
 		shaderTerrain.setMatrix4("view", 1, false,
 				glm::value_ptr(view));
+		// Settea la matriz de vista y proyección al shader que visualiza el buffer de profundidad
+		shaderDepthTesting.setMatrix4("projection", 1, false,
+			glm::value_ptr(projection));
+		shaderDepthTesting.setMatrix4("view", 1, false,
+			glm::value_ptr(view));
 
 		/*******************************************
 		 * Propiedades Luz direccional
@@ -1252,9 +1297,22 @@ void applicationLoop() {
 		mayowModelAnimate.render(modelMatrixMayowBody);
 
 		/*******************************************
+		* A2
+		*******************************************/
+		modelMatrixA2Body[3][1] = terrain.getHeightTerrain(modelMatrixA2Body[3][0], modelMatrixA2Body[3][2]);
+		glm::vec3 aux = glm::vec3(terrain.getNormalTerrain(modelMatrixA2Body[3][0], modelMatrixA2Body[3][2]));
+		modelMatrixA2Body[1][0] = aux[0];
+		modelMatrixA2Body[1][1] = aux[1];
+		modelMatrixA2Body[1][2] = aux[2];
+		glm::mat4 modelMatrixA2WalkBody = glm::mat4(modelMatrixA2Body);
+		modelMatrixA2WalkBody = glm::scale(modelMatrixA2WalkBody, glm::vec3(0.003, 0.003, 0.003));
+		modelA2Animate.setAnimationIndex(banderaA2Anim);
+		modelA2Animate.render(modelMatrixA2WalkBody);
+
+		/*******************************************
 		 * Skybox
 		 *******************************************/
-		GLint oldCullFaceMode;
+		/*GLint oldCullFaceMode;
 		GLint oldDepthFuncMode;
 		// deshabilita el modo del recorte de caras ocultas para ver las esfera desde adentro
 		glGetIntegerv(GL_CULL_FACE_MODE, &oldCullFaceMode);
@@ -1265,7 +1323,7 @@ void applicationLoop() {
 		glActiveTexture(GL_TEXTURE0);
 		skyboxSphere.render();
 		glCullFace(oldCullFaceMode);
-		glDepthFunc(oldDepthFuncMode);
+		glDepthFunc(oldDepthFuncMode);*/
 
 		/*******************************************
 		 * Creacion de colliders
@@ -1304,7 +1362,7 @@ void applicationLoop() {
 		modelMatrixColliderRock = glm::scale(modelMatrixColliderRock, glm::vec3(1.0, 1.0, 1.0));
 		modelMatrixColliderRock = glm::translate(modelMatrixColliderRock, modelRock.getSbb().c);
 		rockCollider.c = modelMatrixColliderRock[3];
-		rockCollider.ratio = modelRock.getSbb().ratio * 1.0;
+		rockCollider.ratio = modelRock.getSbb().ratio * 0.75;
 		addOrUpdateColliders(collidersSBB, "rock", rockCollider, matrixModelRock);
 
 		// Lamps1 colliders
@@ -1363,6 +1421,7 @@ void applicationLoop() {
 		mayowCollider.e = mayowModelAnimate.getObb().e * glm::vec3(0.021, 0.021, 0.021) * glm::vec3(0.75, 0.75, 0.75);
 		addOrUpdateColliders(collidersOBB, "mayow", mayowCollider, modelMatrixMayow);
 
+		//Lambo collider
 		AbstractModel::OBB lamboCollider;
 		glm::mat4 modelMatrixColliderLambo = glm::mat4(modelMatrixLambo);
 		lamboCollider.u = glm::quat_cast(modelMatrixColliderLambo);
@@ -1371,6 +1430,18 @@ void applicationLoop() {
 		lamboCollider.c = glm::vec3(modelMatrixColliderLambo[3]);
 		lamboCollider.e = modelLambo.getObb().e * 1.3f;
 		addOrUpdateColliders(collidersOBB, "lambo", lamboCollider, modelMatrixLambo);
+
+		//A2 collider
+		AbstractModel::OBB A2Collider;
+		glm::mat4 modelMatrixColliderA2 = glm::mat4(modelMatrixA2Body);
+		modelMatrixColliderA2 = glm::rotate(modelMatrixColliderA2, glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0));
+		// Antes de escalar la matriz del collider hay que tener la orientación
+		A2Collider.u = glm::quat_cast(modelMatrixColliderA2);
+		modelMatrixColliderA2 = glm::scale(modelMatrixColliderA2, glm::vec3(0.3, 0.3, 0.3));
+		modelMatrixColliderA2 = glm::translate(modelMatrixColliderA2, modelA2Animate.getObb().c);
+		A2Collider.c = modelMatrixColliderA2[3];
+		A2Collider.e = modelA2Animate.getObb().e * glm::vec3(0.3, 0.3, 0.3);// *glm::vec3(0.75, 0.75, 0.75);
+		addOrUpdateColliders(collidersOBB, "A2", A2Collider, modelMatrixA2Body);
 
 		/*******************************************
 		 * Render de colliders
@@ -1476,6 +1547,8 @@ void applicationLoop() {
 						modelMatrixMayow = std::get<1>(it->second);
 					if (it->first.compare("lambo") == 0)
 						modelMatrixLambo = std::get<1>(it->second);
+					if (it->first.compare("A2") == 0)
+						modelMatrixA2Body = std::get<1>(it->second);
 				}
 			}
 		}

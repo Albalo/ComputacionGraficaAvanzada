@@ -958,7 +958,7 @@ void applicationLoop() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 projection = glm::perspective(glm::radians(45.0f),
-				(float) screenWidth / (float) screenHeight, 0.01f, 100.0f);
+				(float) screenWidth / (float) screenHeight, 0.1f, 100.0f);
 
 		if(modelSelected == 1){
 			axis = glm::axis(glm::quat_cast(modelMatrixDart));
